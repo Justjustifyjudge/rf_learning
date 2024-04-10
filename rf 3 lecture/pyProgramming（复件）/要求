@@ -1,0 +1,97 @@
+#可视化代码：https://gist.github.com/botforge/64cbb71780e6208172bbf03cd9293553
+#参考 https://pythonprogramming.net/saving-and-loading-reinforcement-learning-stable-baselines-3-tutorial/?completed=/introduction-reinforcement-learning-stable-baselines-3-tutorial/
+#参考 https://huggingface.co/learn/deep-rl-course/unit0/introduction
+#环境 系统默认python环境
+#准备代码
+
+##############################################################################
+
+conda create --name rf python=3.11
+
+conda activate rf
+
+apt install swig cmake
+
+pip install -r https://raw.githubusercontent.com/huggingface/deep-rl-class/main/notebooks/unit1/requirements-unit1.txt
+
+sudo apt-get update
+apt install python-opengl
+apt install ffmpeg
+apt install xvfb
+pip3 install pyvirtualdisplay
+
+##############################################################################
+
+重要参数含义：
+『『0, 1, 2, or 3. 0 means do nothing, 1 means fire the left engine, 
+2 means fire the bottom engine, and 3 means fire the right engine』』
+
+『
+s[0] is the horizontal coordinate
+s[1] is the vertical coordinate
+s[2] is the horizontal speed
+s[3] is the vertical speed
+s[4] is the angle
+s[5] is the angular speed
+s[6] 1 if first leg has contact, else 0
+s[7] 1 if second leg has contact, else 0
+』
+
+##############################################################################
+
+重启虚拟环境，保证新安装环境运行
+import os
+
+os.kill(os.getpid(), 9)
+
+
+
+# 测试虚拟屏幕是否工作，后续预览模型需要
+from pyvirtualdisplay import Display
+
+virtual_display = Display(visible=0, size=(1400, 900))
+virtual_display.start()
+
+
+#引入第三方库
+import gymnasium
+
+from huggingface_sb3 import load_from_hub, package_to_hub
+from huggingface_hub import (
+    notebook_login,
+)  # To log to our Hugging Face account to be able to upload models to the Hub.
+
+from stable_baselines3 import PPO
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.monitor import Monitor
+
+#可视化代码
+
+from matplotlib import animation
+import matplotlib.pyplot as plt
+import gymnasium as gym
+
+"""
+Ensure you have imagemagick installed with 
+sudo apt-get install imagemagick
+Open file in CLI with:
+xgd-open <filelname>
+"""
+def save_frames_as_gif(frames, path='./', filename='gym_animation.gif'):
+
+    #Mess with this to change frame size
+    plt.figure(figsize=(frames[0].shape[1] / 72.0, frames[0].shape[0] / 72.0), dpi=72)
+
+    patch = plt.imshow(frames[0])
+    plt.axis('off')
+
+    def animate(i):
+        patch.set_data(frames[i])
+
+    anim = animation.FuncAnimation(plt.gcf(), animate, frames = len(frames), interval=50)
+    anim.save(path + filename, writer='imagemagick', fps=60)
+
+# 实验代码
+
+# ppo Value-based reinforcement learning method
